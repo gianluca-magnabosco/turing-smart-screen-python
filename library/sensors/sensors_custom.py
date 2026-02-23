@@ -243,6 +243,48 @@ def _linux_get_per_cpu_frequencies():
     return pkg_freqs
 
 
+def _linux_get_per_cpu_max_frequencies():
+    """Return a dict of {cpu_package_index: max_frequency_mhz}.
+    Groups logical CPUs by physical package ID and takes the max."""
+    pkg_max_freqs = {}
+    try:
+        per_cpu = psutil.cpu_freq(percpu=True)
+        if per_cpu:
+            pkg_map = {}
+            for i in range(len(per_cpu)):
+                try:
+                    with open(f'/sys/devices/system/cpu/cpu{i}/topology/physical_package_id') as f:
+                        pkg_map[i] = int(f.read().strip())
+                except (FileNotFoundError, ValueError):
+                    pkg_map[i] = 0
+
+            from collections import defaultdict
+            grouped = defaultdict(list)
+            for i, freq in enumerate(per_cpu):
+                pkg_id = pkg_map.get(i, 0)
+                max_mhz = freq.max if freq.max else 0
+                if max_mhz <= 0:
+                    # Fallback: read from sysfs (value is in KHz)
+                    for path in [
+                        f'/sys/devices/system/cpu/cpu{i}/cpufreq/cpuinfo_max_freq',
+                        f'/sys/devices/system/cpu/cpu{i}/cpufreq/scaling_max_freq'
+                    ]:
+                        try:
+                            with open(path) as f:
+                                max_mhz = int(f.read().strip()) / 1000
+                                break
+                        except Exception:
+                            pass
+                if max_mhz > 0:
+                    grouped[pkg_id].append(max_mhz)
+
+            for pkg_id, maxes in grouped.items():
+                pkg_max_freqs[pkg_id] = max(maxes)
+    except Exception:
+        pass
+    return pkg_max_freqs
+
+
 def _linux_get_per_cpu_usage():
     """Return a dict of {cpu_package_index: usage_percent}.
     Groups logical CPUs by physical package ID. Uses cached interval."""
@@ -351,7 +393,7 @@ class Cpu0Percentage(CustomDataSource):
         return math.nan
 
     def as_string(self) -> str:
-        return f'{Cpu0Percentage.value:>3.0f}%'
+        return f'{Cpu0Percentage.value:.0f}%'
 
     def last_values(self) -> List[float]:
         return Cpu0Percentage.last_val
@@ -382,7 +424,7 @@ class Cpu1Percentage(CustomDataSource):
         return math.nan
 
     def as_string(self) -> str:
-        return f'{Cpu1Percentage.value:>3.0f}%'
+        return f'{Cpu1Percentage.value:.0f}%'
 
     def last_values(self) -> List[float]:
         return Cpu1Percentage.last_val
@@ -417,7 +459,7 @@ class Cpu0Temperature(CustomDataSource):
         return math.nan
 
     def as_string(self) -> str:
-        return f'{Cpu0Temperature.value:>3.0f} C'
+        return f'{Cpu0Temperature.value:.0f}\u00b0C'
 
     def last_values(self) -> List[float]:
         return Cpu0Temperature.last_val
@@ -449,7 +491,7 @@ class Cpu1Temperature(CustomDataSource):
         return math.nan
 
     def as_string(self) -> str:
-        return f'{Cpu1Temperature.value:>3.0f} C'
+        return f'{Cpu1Temperature.value:.0f}\u00b0C'
 
     def last_values(self) -> List[float]:
         return Cpu1Temperature.last_val
@@ -461,8 +503,16 @@ class Cpu1Temperature(CustomDataSource):
 class Cpu0Frequency(CustomDataSource):
     last_val = [math.nan] * 10
     value = 0.0
+    max_freq = 0.0  # Cached max frequency in MHz
+    _max_freq_loaded = False
 
     def as_numeric(self) -> float:
+        if not Cpu0Frequency._max_freq_loaded:
+            Cpu0Frequency._max_freq_loaded = True
+            if _is_linux:
+                max_freqs = _linux_get_per_cpu_max_frequencies()
+                if 0 in max_freqs:
+                    Cpu0Frequency.max_freq = max_freqs[0]
         if _is_linux:
             freqs = _linux_get_per_cpu_frequencies()
             if 0 in freqs:
@@ -489,7 +539,11 @@ class Cpu0Frequency(CustomDataSource):
         return math.nan
 
     def as_string(self) -> str:
-        return f'{Cpu0Frequency.value / 1000:>4.2f} GHz'
+        current_ghz = Cpu0Frequency.value / 1000
+        if Cpu0Frequency.max_freq > 0:
+            max_ghz = Cpu0Frequency.max_freq / 1000
+            return f'{current_ghz:.2f}/{max_ghz:.2f} GHz'
+        return f'{current_ghz:>4.2f} GHz'
 
     def last_values(self) -> List[float]:
         return Cpu0Frequency.last_val
@@ -498,8 +552,16 @@ class Cpu0Frequency(CustomDataSource):
 class Cpu1Frequency(CustomDataSource):
     last_val = [math.nan] * 10
     value = 0.0
+    max_freq = 0.0  # Cached max frequency in MHz
+    _max_freq_loaded = False
 
     def as_numeric(self) -> float:
+        if not Cpu1Frequency._max_freq_loaded:
+            Cpu1Frequency._max_freq_loaded = True
+            if _is_linux:
+                max_freqs = _linux_get_per_cpu_max_frequencies()
+                if 1 in max_freqs:
+                    Cpu1Frequency.max_freq = max_freqs[1]
         if _is_linux:
             freqs = _linux_get_per_cpu_frequencies()
             if 1 in freqs:
@@ -526,7 +588,11 @@ class Cpu1Frequency(CustomDataSource):
         return math.nan
 
     def as_string(self) -> str:
-        return f'{Cpu1Frequency.value / 1000:>4.2f} GHz'
+        current_ghz = Cpu1Frequency.value / 1000
+        if Cpu1Frequency.max_freq > 0:
+            max_ghz = Cpu1Frequency.max_freq / 1000
+            return f'{current_ghz:.2f}/{max_ghz:.2f} GHz'
+        return f'{current_ghz:>4.2f} GHz'
 
     def last_values(self) -> List[float]:
         return Cpu1Frequency.last_val

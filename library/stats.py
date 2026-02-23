@@ -624,21 +624,21 @@ class Memory:
 
         display_themed_value(
             theme_data=memory_stats_theme_data['VIRTUAL']['USED'],
-            value=int(sensors.Memory.virtual_used() / 1024 ** 2),
+            value=f"{sensors.Memory.virtual_used() / 1024 ** 3:.1f}",
             min_size=5,
-            unit=" M"
+            unit=" GB"
         )
         display_themed_value(
             theme_data=memory_stats_theme_data['VIRTUAL']['FREE'],
-            value=int(sensors.Memory.virtual_free() / 1024 ** 2),
+            value=f"{sensors.Memory.virtual_free() / 1024 ** 3:.1f}",
             min_size=5,
-            unit=" M"
+            unit=" GB"
         )
         display_themed_value(
             theme_data=memory_stats_theme_data['VIRTUAL']['TOTAL'],
-            value=int((sensors.Memory.virtual_free() + sensors.Memory.virtual_used()) / 1024 ** 2),
+            value=f"{(sensors.Memory.virtual_free() + sensors.Memory.virtual_used()) / 1024 ** 3:.1f}",
             min_size=5,
-            unit=" M"
+            unit=" GB"
         )
 
 
@@ -664,19 +664,19 @@ class Disk:
             theme_data=disk_theme_data['USED']['TEXT'],
             value=int(used / 1000000000),
             min_size=5,
-            unit=" G"
+            unit=" GB"
         )
         display_themed_value(
             theme_data=disk_theme_data['TOTAL']['TEXT'],
             value=int((free + used) / 1000000000),
             min_size=5,
-            unit=" G"
+            unit=" GB"
         )
         display_themed_value(
             theme_data=disk_theme_data['FREE']['TEXT'],
             value=int(free / 1000000000),
             min_size=5,
-            unit=" G"
+            unit=" GB"
         )
 
 

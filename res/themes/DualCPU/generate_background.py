@@ -17,19 +17,16 @@ SECTION_BG = (18, 22, 50)       # Slightly lighter section header areas
 PANEL_BG = (20, 24, 52)         # Subtle panel background
 PANEL_BORDER = (0, 60, 100)     # Panel border color (dim cyan)
 
-# Section separator Y positions (horizontal lines)
-#   Header 0-50 | CPU 50-290 | RAM+DISK 290-460 | NET 460-620 | PING 620-800
-SEPARATORS = [50, 290, 460, 620]
-
-# Vertical divider X position (center of display)
-VERT_DIV_X = 240
+# Section separator Y positions (horizontal full-width lines)
+#   Header 0-50 | CPU 50-290 | RAM+DISK 290-460 | NET+PING 460-800
+SEPARATORS = [50, 290, 460]
 
 # Panel boxes (x1, y1, x2, y2) - rounded rect areas
-#   CPU 1 panel, CPU 2 panel, RAM panel, DISK panel
 CPU1_PANEL = (8, 54, 234, 285)
 CPU2_PANEL = (246, 54, 472, 285)
 RAM_PANEL = (8, 294, 234, 455)
 DISK_PANEL = (246, 294, 472, 455)
+NET_PING_PANEL = (8, 464, 472, 796)   # Full-width box for NET + PING
 
 
 def lerp_color(c1, c2, t):
@@ -61,13 +58,20 @@ def generate():
         draw.line([(0, y), (WIDTH, y)], fill=highlight)
 
     # Draw panel boxes with rounded corners
-    for panel in [CPU1_PANEL, CPU2_PANEL, RAM_PANEL, DISK_PANEL]:
+    for panel in [CPU1_PANEL, CPU2_PANEL, RAM_PANEL, DISK_PANEL, NET_PING_PANEL]:
         draw_rounded_rect(draw, panel, radius=8, fill=PANEL_BG, outline=PANEL_BORDER)
 
-    # Draw horizontal separator lines
+    # Draw internal separators inside NET_PING box
+    # Vertical separator between UPLOAD and DOWNLOAD columns
+    draw.line([(240, 496), (240, 632)], fill=ACCENT_DIM, width=1)
+    # Horizontal separator between NET and PING sections
+    draw.line([(22, 638), (458, 638)], fill=ACCENT_DIM, width=1)
+    glow = tuple(max(0, c // 3) for c in ACCENT_DIM)
+    draw.line([(22, 639), (458, 639)], fill=glow, width=1)
+
+    # Draw horizontal full-width separator lines
     for sy in SEPARATORS:
         draw.line([(8, sy), (WIDTH - 8, sy)], fill=ACCENT_DIM, width=1)
-        glow = tuple(max(0, c // 3) for c in ACCENT_DIM)
         draw.line([(8, sy + 1), (WIDTH - 8, sy + 1)], fill=glow, width=1)
 
     # Save
