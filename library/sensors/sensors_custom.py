@@ -107,27 +107,36 @@ class ExampleCustomTextOnlyData(CustomDataSource):
 
 
 # =============================================================================
-# Dual-CPU Custom Sensors
+# Dual-CPU Custom Sensors (Cross-platform: Linux + Windows)
 # =============================================================================
-# These custom sensor classes support dual-CPU (multi-socket) systems by
-# querying each CPU independently via LibreHardwareMonitor's .NET API.
+# These custom sensor classes support dual-CPU (multi-socket) systems.
+# On Linux: uses psutil + /sys/class/hwmon for per-CPU data
+# On Windows: uses LibreHardwareMonitor .NET API
 # Also includes RAM clock speed and disk I/O speed sensors.
-#
-# These sensors require HW_SENSORS to be set to LHM or AUTO (Windows only).
 # =============================================================================
 
-# Lazy-loaded LHM references — only imported when a dual-CPU sensor is first used
+import glob
+import subprocess
+
+_is_windows = platform.system() == 'Windows'
+_is_linux = platform.system() == 'Linux'
+
+# ---------------------------------------------------------------------------
+# LHM lazy-load (Windows only)
+# ---------------------------------------------------------------------------
 _lhm_handle = None
 _lhm_Hardware = None
 _lhm_initialized = False
 
 
 def _init_lhm():
-    """Lazy-load the LHM handle. This avoids import errors when LHM is not available."""
+    """Lazy-load the LHM handle (Windows only)."""
     global _lhm_handle, _lhm_Hardware, _lhm_initialized
     if _lhm_initialized:
         return
     _lhm_initialized = True
+    if not _is_windows:
+        return
     try:
         from library.sensors.sensors_librehardwaremonitor import handle, Hardware
         _lhm_handle = handle
@@ -136,8 +145,8 @@ def _init_lhm():
         pass
 
 
-def _get_cpus():
-    """Return a list of all CPU hardware objects from LHM, updated."""
+def _get_cpus_lhm():
+    """Return all CPU hardware objects from LHM, updated."""
     _init_lhm()
     if _lhm_handle is None:
         return []
@@ -149,16 +158,12 @@ def _get_cpus():
     return cpus
 
 
-def _get_cpu_by_index(index):
-    """Return the Nth CPU hardware object (0-based), or None."""
-    cpus = _get_cpus()
-    if index < len(cpus):
-        return cpus[index]
-    return None
+def _get_cpu_by_index_lhm(index):
+    cpus = _get_cpus_lhm()
+    return cpus[index] if index < len(cpus) else None
 
 
-def _find_sensor(hw, sensor_type, name_contains=None, name_startswith=None):
-    """Find a sensor on a hardware object by type and optional name filter."""
+def _find_sensor_lhm(hw, sensor_type, name_contains=None, name_startswith=None):
     if hw is None:
         return None
     for sensor in hw.Sensors:
@@ -173,6 +178,142 @@ def _find_sensor(hw, sensor_type, name_contains=None, name_startswith=None):
 
 
 # ---------------------------------------------------------------------------
+# Linux helpers: per-CPU temperature, frequency, fan via /sys and psutil
+# ---------------------------------------------------------------------------
+def _linux_get_cpu_temperatures():
+    """Return a dict of {physical_package_id: temperature} from coretemp or k10temp."""
+    temps = {}
+    try:
+        sensor_temps = psutil.sensors_temperatures()
+        # coretemp (Intel) reports per-package temperatures
+        if 'coretemp' in sensor_temps:
+            for entry in sensor_temps['coretemp']:
+                label = entry.label.lower()
+                # "Package id 0", "Package id 1" etc.
+                if 'package' in label:
+                    try:
+                        pkg_id = int(label.split()[-1])
+                        temps[pkg_id] = entry.current
+                    except (ValueError, IndexError):
+                        pass
+            # If no package entries found, fall back to physical_package grouping
+            if not temps:
+                for entry in sensor_temps['coretemp']:
+                    if entry.label.startswith('Core'):
+                        temps.setdefault(0, entry.current)
+        # k10temp or zenpower (AMD)
+        for key in ['k10temp', 'zenpower']:
+            if key in sensor_temps and not temps:
+                for i, entry in enumerate(sensor_temps[key]):
+                    temps[i] = entry.current
+    except Exception:
+        pass
+    return temps
+
+
+def _linux_get_per_cpu_frequencies():
+    """Return a dict of {cpu_package_index: avg_frequency_mhz}.
+    Groups logical CPUs by physical package ID."""
+    pkg_freqs = {}
+    try:
+        # Read per-CPU frequencies and group by physical package
+        per_cpu = psutil.cpu_freq(percpu=True)
+        if per_cpu:
+            # Try to map logical CPU -> physical package via sysfs
+            pkg_map = {}  # logical_cpu_id -> package_id
+            for i in range(len(per_cpu)):
+                try:
+                    pkg_path = f'/sys/devices/system/cpu/cpu{i}/topology/physical_package_id'
+                    with open(pkg_path) as f:
+                        pkg_map[i] = int(f.read().strip())
+                except (FileNotFoundError, ValueError):
+                    pkg_map[i] = 0  # fallback: all on package 0
+
+            # Group frequencies by package
+            from collections import defaultdict
+            grouped = defaultdict(list)
+            for i, freq in enumerate(per_cpu):
+                pkg_id = pkg_map.get(i, 0)
+                grouped[pkg_id].append(freq.current)
+
+            for pkg_id, freqs in grouped.items():
+                pkg_freqs[pkg_id] = mean(freqs)
+    except Exception:
+        pass
+    return pkg_freqs
+
+
+def _linux_get_per_cpu_usage():
+    """Return a dict of {cpu_package_index: usage_percent}.
+    Groups logical CPUs by physical package ID. Uses cached interval."""
+    pkg_usage = {}
+    try:
+        per_cpu = psutil.cpu_percent(interval=None, percpu=True)
+        if per_cpu:
+            pkg_map = {}
+            for i in range(len(per_cpu)):
+                try:
+                    pkg_path = f'/sys/devices/system/cpu/cpu{i}/topology/physical_package_id'
+                    with open(pkg_path) as f:
+                        pkg_map[i] = int(f.read().strip())
+                except (FileNotFoundError, ValueError):
+                    pkg_map[i] = 0
+
+            from collections import defaultdict
+            grouped = defaultdict(list)
+            for i, pct in enumerate(per_cpu):
+                pkg_id = pkg_map.get(i, 0)
+                grouped[pkg_id].append(pct)
+
+            for pkg_id, pcts in grouped.items():
+                pkg_usage[pkg_id] = mean(pcts)
+    except Exception:
+        pass
+    return pkg_usage
+
+
+def _linux_get_fan_speeds():
+    """Return a list of fan RPM readings from /sys/class/hwmon (sorted by hwmon/fan index)."""
+    fans = []
+    try:
+        basenames = sorted(glob.glob('/sys/class/hwmon/hwmon*/fan*_input'))
+        if not basenames:
+            basenames = sorted(glob.glob('/sys/class/hwmon/hwmon*/device/fan*_input'))
+        for path in basenames:
+            try:
+                with open(path) as f:
+                    rpm = int(f.read().strip())
+                fans.append(rpm)
+            except (IOError, ValueError):
+                continue
+    except Exception:
+        pass
+    return fans
+
+
+def _linux_get_memory_clock():
+    """Try to read memory clock speed on Linux via dmidecode or /sys."""
+    # Method 1: Try reading from dmidecode (requires root)
+    try:
+        output = subprocess.check_output(
+            ['dmidecode', '-t', 'memory'], stderr=subprocess.DEVNULL, timeout=2
+        ).decode('utf-8', errors='replace')
+        speeds = []
+        for line in output.splitlines():
+            line = line.strip()
+            if line.startswith('Configured Memory Speed:') or line.startswith('Configured Clock Speed:'):
+                val = line.split(':')[1].strip().split()[0]
+                if val.isdigit():
+                    speeds.append(int(val))
+        if speeds:
+            return max(speeds)  # Return the highest configured speed
+    except Exception:
+        pass
+    # Method 2: Fallback - return 0 (not available without root)
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # Per-CPU Percentage (Load %)
 # ---------------------------------------------------------------------------
 class Cpu0Percentage(CustomDataSource):
@@ -180,15 +321,23 @@ class Cpu0Percentage(CustomDataSource):
     value = 0.0
 
     def as_numeric(self) -> float:
-        _init_lhm()
-        cpu = _get_cpu_by_index(0)
-        if cpu:
-            sensor = _find_sensor(cpu, _lhm_Hardware.SensorType.Load, name_startswith="CPU Total")
-            if sensor:
-                Cpu0Percentage.value = float(sensor.Value)
+        if _is_linux:
+            usage = _linux_get_per_cpu_usage()
+            if 0 in usage:
+                Cpu0Percentage.value = usage[0]
                 Cpu0Percentage.last_val.append(Cpu0Percentage.value)
                 Cpu0Percentage.last_val.pop(0)
                 return Cpu0Percentage.value
+        elif _is_windows:
+            _init_lhm()
+            cpu = _get_cpu_by_index_lhm(0)
+            if cpu:
+                sensor = _find_sensor_lhm(cpu, _lhm_Hardware.SensorType.Load, name_startswith="CPU Total")
+                if sensor:
+                    Cpu0Percentage.value = float(sensor.Value)
+                    Cpu0Percentage.last_val.append(Cpu0Percentage.value)
+                    Cpu0Percentage.last_val.pop(0)
+                    return Cpu0Percentage.value
         return math.nan
 
     def as_string(self) -> str:
@@ -203,15 +352,23 @@ class Cpu1Percentage(CustomDataSource):
     value = 0.0
 
     def as_numeric(self) -> float:
-        _init_lhm()
-        cpu = _get_cpu_by_index(1)
-        if cpu:
-            sensor = _find_sensor(cpu, _lhm_Hardware.SensorType.Load, name_startswith="CPU Total")
-            if sensor:
-                Cpu1Percentage.value = float(sensor.Value)
+        if _is_linux:
+            usage = _linux_get_per_cpu_usage()
+            if 1 in usage:
+                Cpu1Percentage.value = usage[1]
                 Cpu1Percentage.last_val.append(Cpu1Percentage.value)
                 Cpu1Percentage.last_val.pop(0)
                 return Cpu1Percentage.value
+        elif _is_windows:
+            _init_lhm()
+            cpu = _get_cpu_by_index_lhm(1)
+            if cpu:
+                sensor = _find_sensor_lhm(cpu, _lhm_Hardware.SensorType.Load, name_startswith="CPU Total")
+                if sensor:
+                    Cpu1Percentage.value = float(sensor.Value)
+                    Cpu1Percentage.last_val.append(Cpu1Percentage.value)
+                    Cpu1Percentage.last_val.pop(0)
+                    return Cpu1Percentage.value
         return math.nan
 
     def as_string(self) -> str:
@@ -229,21 +386,28 @@ class Cpu0Temperature(CustomDataSource):
     value = 0.0
 
     def as_numeric(self) -> float:
-        _init_lhm()
-        cpu = _get_cpu_by_index(0)
-        if cpu:
-            # Try Core Average first, then Core Max, then CPU Package
-            for name_prefix in ["Core Average", "Core Max", "CPU Package", "Core"]:
-                sensor = _find_sensor(cpu, _lhm_Hardware.SensorType.Temperature, name_startswith=name_prefix)
-                if sensor:
-                    Cpu0Temperature.value = float(sensor.Value)
-                    Cpu0Temperature.last_val.append(Cpu0Temperature.value)
-                    Cpu0Temperature.last_val.pop(0)
-                    return Cpu0Temperature.value
+        if _is_linux:
+            temps = _linux_get_cpu_temperatures()
+            if 0 in temps:
+                Cpu0Temperature.value = temps[0]
+                Cpu0Temperature.last_val.append(Cpu0Temperature.value)
+                Cpu0Temperature.last_val.pop(0)
+                return Cpu0Temperature.value
+        elif _is_windows:
+            _init_lhm()
+            cpu = _get_cpu_by_index_lhm(0)
+            if cpu:
+                for name_prefix in ["Core Average", "Core Max", "CPU Package", "Core"]:
+                    sensor = _find_sensor_lhm(cpu, _lhm_Hardware.SensorType.Temperature, name_startswith=name_prefix)
+                    if sensor:
+                        Cpu0Temperature.value = float(sensor.Value)
+                        Cpu0Temperature.last_val.append(Cpu0Temperature.value)
+                        Cpu0Temperature.last_val.pop(0)
+                        return Cpu0Temperature.value
         return math.nan
 
     def as_string(self) -> str:
-        return f'{Cpu0Temperature.value:>3.0f}°C'
+        return f'{Cpu0Temperature.value:>3.0f} C'
 
     def last_values(self) -> List[float]:
         return Cpu0Temperature.last_val
@@ -254,20 +418,28 @@ class Cpu1Temperature(CustomDataSource):
     value = 0.0
 
     def as_numeric(self) -> float:
-        _init_lhm()
-        cpu = _get_cpu_by_index(1)
-        if cpu:
-            for name_prefix in ["Core Average", "Core Max", "CPU Package", "Core"]:
-                sensor = _find_sensor(cpu, _lhm_Hardware.SensorType.Temperature, name_startswith=name_prefix)
-                if sensor:
-                    Cpu1Temperature.value = float(sensor.Value)
-                    Cpu1Temperature.last_val.append(Cpu1Temperature.value)
-                    Cpu1Temperature.last_val.pop(0)
-                    return Cpu1Temperature.value
+        if _is_linux:
+            temps = _linux_get_cpu_temperatures()
+            if 1 in temps:
+                Cpu1Temperature.value = temps[1]
+                Cpu1Temperature.last_val.append(Cpu1Temperature.value)
+                Cpu1Temperature.last_val.pop(0)
+                return Cpu1Temperature.value
+        elif _is_windows:
+            _init_lhm()
+            cpu = _get_cpu_by_index_lhm(1)
+            if cpu:
+                for name_prefix in ["Core Average", "Core Max", "CPU Package", "Core"]:
+                    sensor = _find_sensor_lhm(cpu, _lhm_Hardware.SensorType.Temperature, name_startswith=name_prefix)
+                    if sensor:
+                        Cpu1Temperature.value = float(sensor.Value)
+                        Cpu1Temperature.last_val.append(Cpu1Temperature.value)
+                        Cpu1Temperature.last_val.pop(0)
+                        return Cpu1Temperature.value
         return math.nan
 
     def as_string(self) -> str:
-        return f'{Cpu1Temperature.value:>3.0f}°C'
+        return f'{Cpu1Temperature.value:>3.0f} C'
 
     def last_values(self) -> List[float]:
         return Cpu1Temperature.last_val
@@ -281,21 +453,29 @@ class Cpu0Frequency(CustomDataSource):
     value = 0.0
 
     def as_numeric(self) -> float:
-        _init_lhm()
-        cpu = _get_cpu_by_index(0)
-        if cpu:
-            frequencies = []
-            for sensor in cpu.Sensors:
-                if (sensor.SensorType == _lhm_Hardware.SensorType.Clock
-                        and "Core #" in str(sensor.Name)
-                        and "Effective" not in str(sensor.Name)
-                        and sensor.Value is not None):
-                    frequencies.append(float(sensor.Value))
-            if frequencies:
-                Cpu0Frequency.value = mean(frequencies)
+        if _is_linux:
+            freqs = _linux_get_per_cpu_frequencies()
+            if 0 in freqs:
+                Cpu0Frequency.value = freqs[0]
                 Cpu0Frequency.last_val.append(Cpu0Frequency.value)
                 Cpu0Frequency.last_val.pop(0)
                 return Cpu0Frequency.value
+        elif _is_windows:
+            _init_lhm()
+            cpu = _get_cpu_by_index_lhm(0)
+            if cpu:
+                frequencies = []
+                for sensor in cpu.Sensors:
+                    if (sensor.SensorType == _lhm_Hardware.SensorType.Clock
+                            and "Core #" in str(sensor.Name)
+                            and "Effective" not in str(sensor.Name)
+                            and sensor.Value is not None):
+                        frequencies.append(float(sensor.Value))
+                if frequencies:
+                    Cpu0Frequency.value = mean(frequencies)
+                    Cpu0Frequency.last_val.append(Cpu0Frequency.value)
+                    Cpu0Frequency.last_val.pop(0)
+                    return Cpu0Frequency.value
         return math.nan
 
     def as_string(self) -> str:
@@ -310,21 +490,29 @@ class Cpu1Frequency(CustomDataSource):
     value = 0.0
 
     def as_numeric(self) -> float:
-        _init_lhm()
-        cpu = _get_cpu_by_index(1)
-        if cpu:
-            frequencies = []
-            for sensor in cpu.Sensors:
-                if (sensor.SensorType == _lhm_Hardware.SensorType.Clock
-                        and "Core #" in str(sensor.Name)
-                        and "Effective" not in str(sensor.Name)
-                        and sensor.Value is not None):
-                    frequencies.append(float(sensor.Value))
-            if frequencies:
-                Cpu1Frequency.value = mean(frequencies)
+        if _is_linux:
+            freqs = _linux_get_per_cpu_frequencies()
+            if 1 in freqs:
+                Cpu1Frequency.value = freqs[1]
                 Cpu1Frequency.last_val.append(Cpu1Frequency.value)
                 Cpu1Frequency.last_val.pop(0)
                 return Cpu1Frequency.value
+        elif _is_windows:
+            _init_lhm()
+            cpu = _get_cpu_by_index_lhm(1)
+            if cpu:
+                frequencies = []
+                for sensor in cpu.Sensors:
+                    if (sensor.SensorType == _lhm_Hardware.SensorType.Clock
+                            and "Core #" in str(sensor.Name)
+                            and "Effective" not in str(sensor.Name)
+                            and sensor.Value is not None):
+                        frequencies.append(float(sensor.Value))
+                if frequencies:
+                    Cpu1Frequency.value = mean(frequencies)
+                    Cpu1Frequency.last_val.append(Cpu1Frequency.value)
+                    Cpu1Frequency.last_val.pop(0)
+                    return Cpu1Frequency.value
         return math.nan
 
     def as_string(self) -> str:
@@ -335,35 +523,42 @@ class Cpu1Frequency(CustomDataSource):
 
 
 # ---------------------------------------------------------------------------
-# Per-CPU Fan Speed (queried from motherboard sub-hardware)
-# On dual-socket boards, fan sensors are typically on the motherboard chipset.
-# We attempt to match Fan #1 to CPU0 and Fan #2 to CPU1.
-# You may need to adjust the fan name matching for your specific motherboard.
+# Per-CPU Fan Speed
+# On Linux: reads fan RPM from /sys/class/hwmon (fan1 -> CPU0, fan2 -> CPU1)
+# On Windows: reads from LHM motherboard subhardware
 # ---------------------------------------------------------------------------
 class Cpu0FanSpeed(CustomDataSource):
     last_val = [math.nan] * 10
     value = 0.0
 
     def as_numeric(self) -> float:
-        _init_lhm()
-        if _lhm_handle is None:
-            return math.nan
-        try:
-            for hardware in _lhm_handle.Hardware:
-                if hardware.HardwareType == _lhm_Hardware.HardwareType.Motherboard:
-                    hardware.Update()
-                    for sh in hardware.SubHardware:
-                        sh.Update()
-                        for sensor in sh.Sensors:
-                            if (sensor.SensorType == _lhm_Hardware.SensorType.Fan
-                                    and sensor.Value is not None
-                                    and ("#1" in str(sensor.Name) or "CPU" in str(sensor.Name))):
-                                Cpu0FanSpeed.value = float(sensor.Value)
-                                Cpu0FanSpeed.last_val.append(Cpu0FanSpeed.value)
-                                Cpu0FanSpeed.last_val.pop(0)
-                                return Cpu0FanSpeed.value
-        except Exception:
-            pass
+        if _is_linux:
+            fans = _linux_get_fan_speeds()
+            if len(fans) > 0:
+                Cpu0FanSpeed.value = float(fans[0])
+                Cpu0FanSpeed.last_val.append(Cpu0FanSpeed.value)
+                Cpu0FanSpeed.last_val.pop(0)
+                return Cpu0FanSpeed.value
+        elif _is_windows:
+            _init_lhm()
+            if _lhm_handle is None:
+                return math.nan
+            try:
+                for hardware in _lhm_handle.Hardware:
+                    if hardware.HardwareType == _lhm_Hardware.HardwareType.Motherboard:
+                        hardware.Update()
+                        for sh in hardware.SubHardware:
+                            sh.Update()
+                            for sensor in sh.Sensors:
+                                if (sensor.SensorType == _lhm_Hardware.SensorType.Fan
+                                        and sensor.Value is not None
+                                        and ("#1" in str(sensor.Name) or "CPU" in str(sensor.Name))):
+                                    Cpu0FanSpeed.value = float(sensor.Value)
+                                    Cpu0FanSpeed.last_val.append(Cpu0FanSpeed.value)
+                                    Cpu0FanSpeed.last_val.pop(0)
+                                    return Cpu0FanSpeed.value
+            except Exception:
+                pass
         return math.nan
 
     def as_string(self) -> str:
@@ -378,25 +573,33 @@ class Cpu1FanSpeed(CustomDataSource):
     value = 0.0
 
     def as_numeric(self) -> float:
-        _init_lhm()
-        if _lhm_handle is None:
-            return math.nan
-        try:
-            for hardware in _lhm_handle.Hardware:
-                if hardware.HardwareType == _lhm_Hardware.HardwareType.Motherboard:
-                    hardware.Update()
-                    for sh in hardware.SubHardware:
-                        sh.Update()
-                        for sensor in sh.Sensors:
-                            if (sensor.SensorType == _lhm_Hardware.SensorType.Fan
-                                    and sensor.Value is not None
-                                    and "#2" in str(sensor.Name)):
-                                Cpu1FanSpeed.value = float(sensor.Value)
-                                Cpu1FanSpeed.last_val.append(Cpu1FanSpeed.value)
-                                Cpu1FanSpeed.last_val.pop(0)
-                                return Cpu1FanSpeed.value
-        except Exception:
-            pass
+        if _is_linux:
+            fans = _linux_get_fan_speeds()
+            if len(fans) > 1:
+                Cpu1FanSpeed.value = float(fans[1])
+                Cpu1FanSpeed.last_val.append(Cpu1FanSpeed.value)
+                Cpu1FanSpeed.last_val.pop(0)
+                return Cpu1FanSpeed.value
+        elif _is_windows:
+            _init_lhm()
+            if _lhm_handle is None:
+                return math.nan
+            try:
+                for hardware in _lhm_handle.Hardware:
+                    if hardware.HardwareType == _lhm_Hardware.HardwareType.Motherboard:
+                        hardware.Update()
+                        for sh in hardware.SubHardware:
+                            sh.Update()
+                            for sensor in sh.Sensors:
+                                if (sensor.SensorType == _lhm_Hardware.SensorType.Fan
+                                        and sensor.Value is not None
+                                        and "#2" in str(sensor.Name)):
+                                    Cpu1FanSpeed.value = float(sensor.Value)
+                                    Cpu1FanSpeed.last_val.append(Cpu1FanSpeed.value)
+                                    Cpu1FanSpeed.last_val.pop(0)
+                                    return Cpu1FanSpeed.value
+            except Exception:
+                pass
         return math.nan
 
     def as_string(self) -> str:
@@ -407,39 +610,53 @@ class Cpu1FanSpeed(CustomDataSource):
 
 
 # ---------------------------------------------------------------------------
-# RAM Clock Speed (via LHM Memory hardware)
+# RAM Clock Speed
+# Linux: reads via dmidecode (needs root) or returns 0
+# Windows: reads from LHM Memory hardware
 # ---------------------------------------------------------------------------
 class MemoryClockSpeed(CustomDataSource):
     value = 0.0
+    _cached = False
 
     def as_numeric(self) -> float:
-        _init_lhm()
-        if _lhm_handle is None:
-            return math.nan
-        try:
-            for hardware in _lhm_handle.Hardware:
-                if hardware.HardwareType == _lhm_Hardware.HardwareType.Memory:
-                    hardware.Update()
-                    for sensor in hardware.Sensors:
-                        if (sensor.SensorType == _lhm_Hardware.SensorType.Clock
-                                and sensor.Value is not None):
-                            MemoryClockSpeed.value = float(sensor.Value)
-                            return MemoryClockSpeed.value
-        except Exception:
-            pass
+        # Memory clock rarely changes, cache after first read
+        if MemoryClockSpeed._cached and MemoryClockSpeed.value > 0:
+            return MemoryClockSpeed.value
+
+        if _is_linux:
+            speed = _linux_get_memory_clock()
+            if speed > 0:
+                MemoryClockSpeed.value = float(speed)
+                MemoryClockSpeed._cached = True
+                return MemoryClockSpeed.value
+        elif _is_windows:
+            _init_lhm()
+            if _lhm_handle is not None:
+                try:
+                    for hardware in _lhm_handle.Hardware:
+                        if hardware.HardwareType == _lhm_Hardware.HardwareType.Memory:
+                            hardware.Update()
+                            for sensor in hardware.Sensors:
+                                if (sensor.SensorType == _lhm_Hardware.SensorType.Clock
+                                        and sensor.Value is not None):
+                                    MemoryClockSpeed.value = float(sensor.Value)
+                                    MemoryClockSpeed._cached = True
+                                    return MemoryClockSpeed.value
+                except Exception:
+                    pass
         return math.nan
 
     def as_string(self) -> str:
-        return f'{MemoryClockSpeed.value:>4.0f} MHz'
+        if MemoryClockSpeed.value > 0:
+            return f'{MemoryClockSpeed.value:>4.0f} MHz'
+        return 'N/A'
 
     def last_values(self) -> List[float]:
         return None
 
 
 # ---------------------------------------------------------------------------
-# Disk Read/Write Speed (via psutil delta calculation)
-# psutil.disk_io_counters() returns cumulative bytes; we compute the rate
-# by tracking the delta between calls.
+# Disk Read/Write Speed (via psutil delta calculation - cross platform)
 # ---------------------------------------------------------------------------
 class DiskReadSpeed(CustomDataSource):
     last_val = [math.nan] * 10
@@ -453,7 +670,7 @@ class DiskReadSpeed(CustomDataSource):
         if DiskReadSpeed._prev_bytes is not None and DiskReadSpeed._prev_time is not None:
             dt = now - DiskReadSpeed._prev_time
             if dt > 0:
-                DiskReadSpeed.value = (counters.read_bytes - DiskReadSpeed._prev_bytes) / dt / (1024 * 1024)  # MB/s
+                DiskReadSpeed.value = (counters.read_bytes - DiskReadSpeed._prev_bytes) / dt / (1024 * 1024)
         DiskReadSpeed._prev_bytes = counters.read_bytes
         DiskReadSpeed._prev_time = now
 
@@ -482,7 +699,7 @@ class DiskWriteSpeed(CustomDataSource):
         if DiskWriteSpeed._prev_bytes is not None and DiskWriteSpeed._prev_time is not None:
             dt = now - DiskWriteSpeed._prev_time
             if dt > 0:
-                DiskWriteSpeed.value = (counters.write_bytes - DiskWriteSpeed._prev_bytes) / dt / (1024 * 1024)  # MB/s
+                DiskWriteSpeed.value = (counters.write_bytes - DiskWriteSpeed._prev_bytes) / dt / (1024 * 1024)
         DiskWriteSpeed._prev_bytes = counters.write_bytes
         DiskWriteSpeed._prev_time = now
 

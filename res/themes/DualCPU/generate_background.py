@@ -5,8 +5,8 @@ Requires Pillow: pip install Pillow
 """
 from PIL import Image, ImageDraw
 
-WIDTH = 320
-HEIGHT = 480
+WIDTH = 480
+HEIGHT = 800
 
 # Color palette
 COLOR_TOP = (16, 18, 40)        # Dark navy top
@@ -15,11 +15,11 @@ ACCENT_DIM = (0, 80, 130)       # Dim cyan accent for separator lines
 SECTION_BG = (18, 22, 50)       # Slightly lighter section header areas
 
 # Section separator Y positions (horizontal lines)
-SEPARATORS = [30, 138, 218, 280, 345, 400]
+SEPARATORS = [44, 230, 360, 460, 570, 660]
 
 # Section header band ranges (Y start, Y end) for subtle highlight
 HEADER_BANDS = [
-    (0, 30),      # Date/Time/Uptime header
+    (0, 44),      # Date/Time/Uptime header
 ]
 
 
