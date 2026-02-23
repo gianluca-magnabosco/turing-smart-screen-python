@@ -15,11 +15,11 @@ ACCENT_DIM = (0, 80, 130)       # Dim cyan accent for separator lines
 SECTION_BG = (18, 22, 50)       # Slightly lighter section header areas
 
 # Section separator Y positions (horizontal lines)
-SEPARATORS = [44, 230, 360, 460, 570, 660]
+SEPARATORS = [54, 295, 435, 545, 655]
 
 # Section header band ranges (Y start, Y end) for subtle highlight
 HEADER_BANDS = [
-    (0, 44),      # Date/Time/Uptime header
+    (0, 54),      # Date/Time/Uptime header
 ]
 
 

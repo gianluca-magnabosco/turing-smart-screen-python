@@ -1,7 +1,7 @@
 # =============================================================================
-# DualCPU Theme - Tech/Modern Style
+# DualCPU Theme - Tech/Modern Style (Enlarged Layout)
 # For 5" UsbPCMonitor (480x800, Portrait)
-# Dual-CPU system with GPU, RAM, Disk, Network, Date/Time, Uptime
+# Dual-CPU system with GPU, RAM, Disk, Network, Ping, Date/Time, Uptime
 # =============================================================================
 
 author: "@Gian"
@@ -19,229 +19,240 @@ static_images:
     WIDTH: 480
     HEIGHT: 800
 
-# --- Static Labels ---
+# =============================================================================
+# STATIC LABELS
+# =============================================================================
 static_text:
 
-  # ── Header row (Y 0-40) ──
+  # ── Header Row (Y 0-54) ──
   LABEL_UPTIME_PREFIX:
     TEXT: "UP:"
-    X: 340
-    Y: 12
+    X: 330
+    Y: 16
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 14
+    FONT_SIZE: 16
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
-  # ── CPU Section (Y 48-225) ──
+  # ── CPU Section (Y 54-295) ──
   LABEL_CPU1:
     TEXT: "CPU 1"
     X: 15
-    Y: 52
+    Y: 62
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 18
+    FONT_SIZE: 24
     FONT_COLOR: 255, 165, 0
     BACKGROUND_IMAGE: background.png
 
   LABEL_CPU2:
     TEXT: "CPU 2"
     X: 255
-    Y: 52
+    Y: 62
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 18
+    FONT_SIZE: 24
     FONT_COLOR: 255, 165, 0
     BACKGROUND_IMAGE: background.png
 
   LABEL_CPU1_TEMP:
     TEXT: "TEMP:"
     X: 15
-    Y: 80
+    Y: 94
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 13
+    FONT_SIZE: 16
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
   LABEL_CPU1_CLK:
     TEXT: "CLK:"
     X: 15
-    Y: 100
+    Y: 120
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 13
+    FONT_SIZE: 16
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
   LABEL_CPU1_FAN:
     TEXT: "FAN:"
     X: 15
-    Y: 198
+    Y: 264
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 12
+    FONT_SIZE: 15
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
   LABEL_CPU2_TEMP:
     TEXT: "TEMP:"
     X: 255
-    Y: 80
+    Y: 94
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 13
+    FONT_SIZE: 16
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
   LABEL_CPU2_CLK:
     TEXT: "CLK:"
     X: 255
-    Y: 100
+    Y: 120
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 13
+    FONT_SIZE: 16
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
   LABEL_CPU2_FAN:
     TEXT: "FAN:"
     X: 255
-    Y: 198
+    Y: 264
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 12
+    FONT_SIZE: 15
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
-  # ── GPU Section (Y 234-355) ──
+  # ── GPU Section (Y 295-435) ──
   LABEL_GPU:
     TEXT: "GPU"
     X: 15
-    Y: 238
+    Y: 302
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 18
+    FONT_SIZE: 24
     FONT_COLOR: 255, 165, 0
     BACKGROUND_IMAGE: background.png
 
   LABEL_GPU_TEMP:
     TEXT: "TEMP:"
-    X: 220
-    Y: 260
+    X: 230
+    Y: 320
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 13
+    FONT_SIZE: 16
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
   LABEL_GPU_VRAM:
     TEXT: "VRAM:"
-    X: 220
-    Y: 285
+    X: 230
+    Y: 350
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 13
+    FONT_SIZE: 16
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
   LABEL_GPU_FAN:
     TEXT: "FAN:"
-    X: 220
-    Y: 310
+    X: 230
+    Y: 380
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 13
+    FONT_SIZE: 16
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
   LABEL_GPU_FREQ:
     TEXT: "CLK:"
-    X: 220
-    Y: 335
+    X: 230
+    Y: 410
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 13
+    FONT_SIZE: 16
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
-  # ── RAM Section (Y 364-455) ──
+  # ── RAM Section (Y 435-545) ──
   LABEL_RAM:
     TEXT: "RAM"
     X: 15
-    Y: 368
+    Y: 442
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 18
+    FONT_SIZE: 24
     FONT_COLOR: 255, 165, 0
     BACKGROUND_IMAGE: background.png
 
   LABEL_RAM_CLK:
     TEXT: "CLK:"
     X: 15
-    Y: 432
+    Y: 524
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 13
+    FONT_SIZE: 16
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
-  # ── Disk Section (Y 464-565) ──
+  # ── Disk Section (Y 545-655) ──
   LABEL_DISK:
     TEXT: "DISK"
     X: 15
-    Y: 468
+    Y: 552
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 18
+    FONT_SIZE: 24
     FONT_COLOR: 255, 165, 0
     BACKGROUND_IMAGE: background.png
 
   LABEL_DISK_R:
     TEXT: "READ:"
     X: 15
-    Y: 540
+    Y: 632
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 13
+    FONT_SIZE: 16
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
   LABEL_DISK_W:
     TEXT: "WRITE:"
     X: 250
-    Y: 540
+    Y: 632
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 13
+    FONT_SIZE: 16
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
-  # ── Network Section (Y 574-655) ──
+  # ── Network + Ping Section (Y 655-795) ──
   LABEL_NET:
     TEXT: "NET"
     X: 15
-    Y: 578
+    Y: 662
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 18
+    FONT_SIZE: 24
     FONT_COLOR: 255, 165, 0
     BACKGROUND_IMAGE: background.png
 
   LABEL_NET_UP:
     TEXT: "UP:"
     X: 15
-    Y: 610
+    Y: 694
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 14
+    FONT_SIZE: 18
     FONT_COLOR: 0, 200, 100
     BACKGROUND_IMAGE: background.png
 
   LABEL_NET_DOWN:
     TEXT: "DL:"
     X: 250
-    Y: 610
+    Y: 694
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 14
+    FONT_SIZE: 18
     FONT_COLOR: 0, 160, 255
     BACKGROUND_IMAGE: background.png
 
   LABEL_NET_TOTAL_UP:
     TEXT: "SENT:"
     X: 15
-    Y: 635
+    Y: 724
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 12
+    FONT_SIZE: 14
     FONT_COLOR: 100, 100, 120
     BACKGROUND_IMAGE: background.png
 
   LABEL_NET_TOTAL_DOWN:
     TEXT: "RECV:"
     X: 250
-    Y: 635
+    Y: 724
     FONT: roboto-mono/RobotoMono-Bold.ttf
-    FONT_SIZE: 12
+    FONT_SIZE: 14
     FONT_COLOR: 100, 100, 120
+    BACKGROUND_IMAGE: background.png
+
+  LABEL_PING:
+    TEXT: "PING:"
+    X: 15
+    Y: 758
+    FONT: roboto-mono/RobotoMono-Bold.ttf
+    FONT_SIZE: 18
+    FONT_COLOR: 0, 212, 255
     BACKGROUND_IMAGE: background.png
 
 # =============================================================================
@@ -269,10 +280,10 @@ STATS:
     PERCENTAGE:
       RADIAL:
         SHOW: True
-        X: 105
-        Y: 300
-        RADIUS: 42
-        WIDTH: 10
+        X: 110
+        Y: 375
+        RADIUS: 50
+        WIDTH: 12
         MIN_VALUE: 0
         MAX_VALUE: 100
         ANGLE_START: 225
@@ -284,7 +295,7 @@ STATS:
         SHOW_TEXT: True
         SHOW_UNIT: True
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 16
+        FONT_SIZE: 20
         FONT_COLOR: 255, 255, 255
         BACKGROUND_IMAGE: background.png
         DRAW_BAR_BACKGROUND: True
@@ -299,10 +310,10 @@ STATS:
     MEMORY_USED:
       TEXT:
         SHOW: True
-        X: 296
-        Y: 285
+        X: 310
+        Y: 350
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 18
         FONT_COLOR: 0, 212, 255
         BACKGROUND_IMAGE: background.png
 
@@ -313,10 +324,10 @@ STATS:
     TEMPERATURE:
       TEXT:
         SHOW: True
-        X: 296
-        Y: 260
+        X: 310
+        Y: 320
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 18
         FONT_COLOR: 255, 255, 255
         BACKGROUND_IMAGE: background.png
 
@@ -327,20 +338,20 @@ STATS:
     FAN_SPEED:
       TEXT:
         SHOW: True
-        X: 270
-        Y: 310
+        X: 290
+        Y: 380
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 18
         FONT_COLOR: 255, 255, 255
         BACKGROUND_IMAGE: background.png
 
     FREQUENCY:
       TEXT:
         SHOW: True
-        X: 270
-        Y: 335
+        X: 290
+        Y: 410
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 18
         FONT_COLOR: 160, 160, 180
         BACKGROUND_IMAGE: background.png
 
@@ -358,9 +369,9 @@ STATS:
       GRAPH:
         SHOW: True
         X: 15
-        Y: 408
+        Y: 498
         WIDTH: 450
-        HEIGHT: 16
+        HEIGHT: 22
         MIN_VALUE: 0
         MAX_VALUE: 100
         BAR_COLOR: 0, 212, 255
@@ -368,26 +379,26 @@ STATS:
         BACKGROUND_COLOR: 30, 30, 60
       PERCENT_TEXT:
         SHOW: True
-        X: 420
-        Y: 368
+        X: 410
+        Y: 442
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 16
+        FONT_SIZE: 22
         FONT_COLOR: 0, 212, 255
         BACKGROUND_IMAGE: background.png
       USED:
         SHOW: True
-        X: 60
-        Y: 388
+        X: 70
+        Y: 470
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 18
         FONT_COLOR: 255, 255, 255
         BACKGROUND_IMAGE: background.png
       TOTAL:
         SHOW: True
-        X: 200
-        Y: 388
+        X: 220
+        Y: 470
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 18
         FONT_COLOR: 160, 160, 180
         BACKGROUND_IMAGE: background.png
       FREE:
@@ -401,9 +412,9 @@ STATS:
       GRAPH:
         SHOW: True
         X: 15
-        Y: 510
+        Y: 606
         WIDTH: 450
-        HEIGHT: 16
+        HEIGHT: 22
         MIN_VALUE: 0
         MAX_VALUE: 100
         BAR_COLOR: 0, 212, 255
@@ -411,28 +422,28 @@ STATS:
         BACKGROUND_COLOR: 30, 30, 60
       PERCENT_TEXT:
         SHOW: True
-        X: 420
-        Y: 468
+        X: 410
+        Y: 552
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 16
+        FONT_SIZE: 22
         FONT_COLOR: 0, 212, 255
         BACKGROUND_IMAGE: background.png
       TEXT:
         SHOW: True
-        X: 80
-        Y: 490
+        X: 90
+        Y: 578
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 18
         FONT_COLOR: 255, 255, 255
         BACKGROUND_IMAGE: background.png
 
     TOTAL:
       TEXT:
         SHOW: True
-        X: 220
-        Y: 490
+        X: 240
+        Y: 578
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 18
         FONT_COLOR: 160, 160, 180
         BACKGROUND_IMAGE: background.png
 
@@ -462,10 +473,10 @@ STATS:
       UPLOAD:
         TEXT:
           SHOW: True
-          X: 52
-          Y: 610
+          X: 56
+          Y: 694
           FONT: roboto-mono/RobotoMono-Bold.ttf
-          FONT_SIZE: 15
+          FONT_SIZE: 18
           FONT_COLOR: 255, 255, 255
           BACKGROUND_IMAGE: background.png
         LINE_GRAPH:
@@ -473,10 +484,10 @@ STATS:
       DOWNLOAD:
         TEXT:
           SHOW: True
-          X: 290
-          Y: 610
+          X: 296
+          Y: 694
           FONT: roboto-mono/RobotoMono-Bold.ttf
-          FONT_SIZE: 15
+          FONT_SIZE: 18
           FONT_COLOR: 255, 255, 255
           BACKGROUND_IMAGE: background.png
         LINE_GRAPH:
@@ -484,19 +495,19 @@ STATS:
       UPLOADED:
         TEXT:
           SHOW: True
-          X: 72
-          Y: 635
+          X: 84
+          Y: 724
           FONT: roboto-mono/RobotoMono-Bold.ttf
-          FONT_SIZE: 12
+          FONT_SIZE: 14
           FONT_COLOR: 160, 160, 180
           BACKGROUND_IMAGE: background.png
       DOWNLOADED:
         TEXT:
           SHOW: True
-          X: 310
-          Y: 635
+          X: 324
+          Y: 724
           FONT: roboto-mono/RobotoMono-Bold.ttf
-          FONT_SIZE: 12
+          FONT_SIZE: 14
           FONT_COLOR: 160, 160, 180
           BACKGROUND_IMAGE: background.png
 
@@ -508,9 +519,9 @@ STATS:
       TEXT:
         SHOW: True
         X: 15
-        Y: 12
+        Y: 16
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 16
+        FONT_SIZE: 18
         FONT_COLOR: 200, 200, 210
         BACKGROUND_IMAGE: background.png
       FORMAT: short
@@ -518,10 +529,10 @@ STATS:
     HOUR:
       TEXT:
         SHOW: True
-        X: 150
-        Y: 12
+        X: 160
+        Y: 14
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 16
+        FONT_SIZE: 22
         FONT_COLOR: 0, 212, 255
         BACKGROUND_IMAGE: background.png
       FORMAT: "HH:mm:ss"
@@ -538,32 +549,47 @@ STATS:
       TEXT:
         SHOW: True
         X: 370
-        Y: 12
+        Y: 16
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 16
         FONT_COLOR: 200, 200, 210
         BACKGROUND_IMAGE: background.png
 
-  # === Disable unused sections ===
+  # === Disable unused ===
   WEATHER:
     INTERVAL: 0
 
+  # === PING (8.8.8.8) ===
   PING:
-    INTERVAL: 0
+    INTERVAL: 3
+    GRAPH:
+      SHOW: False
+    RADIAL:
+      SHOW: False
+    LINE_GRAPH:
+      SHOW: False
+    TEXT:
+      SHOW: True
+      X: 96
+      Y: 758
+      FONT: roboto-mono/RobotoMono-Bold.ttf
+      FONT_SIZE: 20
+      FONT_COLOR: 255, 255, 255
+      BACKGROUND_IMAGE: background.png
 
   # === CUSTOM SENSORS (Dual-CPU, RAM Clock, Disk I/O) ===
   CUSTOM:
     INTERVAL: 2
 
-    # ── CPU 0 (Left Column, x=15-230) ──
+    # ── CPU 0 (Left Column, x=15-235) ──
 
     Cpu0Percentage:
       RADIAL:
         SHOW: True
-        X: 115
-        Y: 155
-        RADIUS: 38
-        WIDTH: 9
+        X: 120
+        Y: 200
+        RADIUS: 52
+        WIDTH: 12
         MIN_VALUE: 0
         MAX_VALUE: 100
         ANGLE_START: 225
@@ -575,7 +601,7 @@ STATS:
         SHOW_TEXT: True
         SHOW_UNIT: False
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 16
+        FONT_SIZE: 22
         FONT_COLOR: 255, 255, 255
         BACKGROUND_IMAGE: background.png
         DRAW_BAR_BACKGROUND: True
@@ -584,30 +610,30 @@ STATS:
     Cpu0Temperature:
       TEXT:
         SHOW: True
-        X: 80
-        Y: 80
+        X: 88
+        Y: 94
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 18
         FONT_COLOR: 255, 255, 255
         BACKGROUND_IMAGE: background.png
 
     Cpu0Frequency:
       TEXT:
         SHOW: True
-        X: 66
-        Y: 100
+        X: 72
+        Y: 120
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 18
         FONT_COLOR: 160, 160, 180
         BACKGROUND_IMAGE: background.png
 
     Cpu0FanSpeed:
       TEXT:
         SHOW: True
-        X: 62
-        Y: 198
+        X: 68
+        Y: 264
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 12
+        FONT_SIZE: 15
         FONT_COLOR: 120, 120, 140
         BACKGROUND_IMAGE: background.png
 
@@ -617,9 +643,9 @@ STATS:
       RADIAL:
         SHOW: True
         X: 365
-        Y: 155
-        RADIUS: 38
-        WIDTH: 9
+        Y: 200
+        RADIUS: 52
+        WIDTH: 12
         MIN_VALUE: 0
         MAX_VALUE: 100
         ANGLE_START: 225
@@ -631,7 +657,7 @@ STATS:
         SHOW_TEXT: True
         SHOW_UNIT: False
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 16
+        FONT_SIZE: 22
         FONT_COLOR: 255, 255, 255
         BACKGROUND_IMAGE: background.png
         DRAW_BAR_BACKGROUND: True
@@ -640,30 +666,30 @@ STATS:
     Cpu1Temperature:
       TEXT:
         SHOW: True
-        X: 320
-        Y: 80
+        X: 328
+        Y: 94
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 18
         FONT_COLOR: 255, 255, 255
         BACKGROUND_IMAGE: background.png
 
     Cpu1Frequency:
       TEXT:
         SHOW: True
-        X: 308
-        Y: 100
+        X: 312
+        Y: 120
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 18
         FONT_COLOR: 160, 160, 180
         BACKGROUND_IMAGE: background.png
 
     Cpu1FanSpeed:
       TEXT:
         SHOW: True
-        X: 302
-        Y: 198
+        X: 308
+        Y: 264
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 12
+        FONT_SIZE: 15
         FONT_COLOR: 120, 120, 140
         BACKGROUND_IMAGE: background.png
 
@@ -672,10 +698,10 @@ STATS:
     MemoryClockSpeed:
       TEXT:
         SHOW: True
-        X: 60
-        Y: 432
+        X: 72
+        Y: 524
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 16
         FONT_COLOR: 200, 200, 210
         BACKGROUND_IMAGE: background.png
 
@@ -684,19 +710,19 @@ STATS:
     DiskReadSpeed:
       TEXT:
         SHOW: True
-        X: 80
-        Y: 540
+        X: 90
+        Y: 632
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 16
         FONT_COLOR: 0, 212, 255
         BACKGROUND_IMAGE: background.png
 
     DiskWriteSpeed:
       TEXT:
         SHOW: True
-        X: 322
-        Y: 540
+        X: 340
+        Y: 632
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 14
+        FONT_SIZE: 16
         FONT_COLOR: 255, 165, 0
         BACKGROUND_IMAGE: background.png

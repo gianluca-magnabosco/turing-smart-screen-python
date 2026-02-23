@@ -273,9 +273,22 @@ def _linux_get_per_cpu_usage():
 
 
 def _linux_get_fan_speeds():
-    """Return a list of fan RPM readings from /sys/class/hwmon (sorted by hwmon/fan index)."""
+    """Return a list of fan RPM readings. Tries psutil first, then /sys/class/hwmon."""
     fans = []
     try:
+        # Method 1: psutil.sensors_fans() — most portable
+        fan_data = psutil.sensors_fans()
+        if fan_data:
+            for chip_name in sorted(fan_data.keys()):
+                for entry in fan_data[chip_name]:
+                    fans.append(int(entry.current))
+            if fans:
+                return fans
+    except (AttributeError, Exception):
+        pass
+
+    try:
+        # Method 2: Direct sysfs reading
         basenames = sorted(glob.glob('/sys/class/hwmon/hwmon*/fan*_input'))
         if not basenames:
             basenames = sorted(glob.glob('/sys/class/hwmon/hwmon*/device/fan*_input'))
@@ -288,12 +301,31 @@ def _linux_get_fan_speeds():
                 continue
     except Exception:
         pass
+
+    # Method 3: Try ipmitool for server boards (IPMI-managed fans)
+    if not fans:
+        try:
+            output = subprocess.check_output(
+                ['ipmitool', 'sdr', 'type', 'Fan'],
+                stderr=subprocess.DEVNULL, timeout=3
+            ).decode('utf-8', errors='replace')
+            for line in output.splitlines():
+                # Typical format: "FAN 1 | 30h | ok | 29.1 | 3400 RPM"
+                parts = line.split('|')
+                if len(parts) >= 5:
+                    val_part = parts[4].strip()
+                    rpm_str = val_part.split()[0] if val_part else ''
+                    if rpm_str.isdigit():
+                        fans.append(int(rpm_str))
+        except Exception:
+            pass
+
     return fans
 
 
 def _linux_get_memory_clock():
     """Try to read memory clock speed on Linux via dmidecode or /sys."""
-    # Method 1: Try reading from dmidecode (requires root)
+    # Method 1: Try dmidecode directly (works if running as root)
     try:
         output = subprocess.check_output(
             ['dmidecode', '-t', 'memory'], stderr=subprocess.DEVNULL, timeout=2
@@ -303,13 +335,42 @@ def _linux_get_memory_clock():
             line = line.strip()
             if line.startswith('Configured Memory Speed:') or line.startswith('Configured Clock Speed:'):
                 val = line.split(':')[1].strip().split()[0]
-                if val.isdigit():
+                if val.isdigit() and int(val) > 0:
                     speeds.append(int(val))
         if speeds:
-            return max(speeds)  # Return the highest configured speed
+            return max(speeds)
     except Exception:
         pass
-    # Method 2: Fallback - return 0 (not available without root)
+    # Method 2: Try sudo -n dmidecode (works if NOPASSWD is configured)
+    try:
+        output = subprocess.check_output(
+            ['sudo', '-n', 'dmidecode', '-t', 'memory'], stderr=subprocess.DEVNULL, timeout=3
+        ).decode('utf-8', errors='replace')
+        speeds = []
+        for line in output.splitlines():
+            line = line.strip()
+            if line.startswith('Configured Memory Speed:') or line.startswith('Configured Clock Speed:'):
+                val = line.split(':')[1].strip().split()[0]
+                if val.isdigit() and int(val) > 0:
+                    speeds.append(int(val))
+        if speeds:
+            return max(speeds)
+    except Exception:
+        pass
+    # Method 3: Try decode-dimms from i2c-tools
+    try:
+        output = subprocess.check_output(
+            ['decode-dimms'], stderr=subprocess.DEVNULL, timeout=5
+        ).decode('utf-8', errors='replace')
+        for line in output.splitlines():
+            if 'Maximum module speed' in line:
+                parts = line.split()
+                for p in parts:
+                    if p.isdigit() and int(p) > 100:
+                        return int(p)
+    except Exception:
+        pass
+    # Method 4: Fallback - return 0 (not available without root)
     return 0
 
 
