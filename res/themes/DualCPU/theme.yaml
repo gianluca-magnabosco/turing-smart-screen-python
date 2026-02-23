@@ -388,7 +388,7 @@ STATS:
       DOWNLOAD:
         TEXT:
           SHOW: True
-          X: 296
+          X: 292
           Y: 498
           FONT: roboto-mono/RobotoMono-Bold.ttf
           FONT_SIZE: 16
@@ -420,7 +420,7 @@ STATS:
       DOWNLOADED:
         TEXT:
           SHOW: True
-          X: 322
+          X: 312
           Y: 522
           FONT: roboto-mono/RobotoMono-Bold.ttf
           FONT_SIZE: 13
