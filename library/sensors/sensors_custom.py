@@ -703,3 +703,87 @@ class DiskWriteSpeed(CustomDataSource):
 
     def last_values(self) -> List[float]:
         return DiskWriteSpeed.last_val
+
+
+# ---------------------------------------------------------------------------
+# CPU Fan Speeds (via psutil sensors_fans - nct6779 chip on X99 dual-CPU)
+# ---------------------------------------------------------------------------
+def _linux_get_fan_speeds() -> dict:
+    """Get fan speeds from nct6779 chip via psutil."""
+    try:
+        fans = psutil.sensors_fans()
+        if 'nct6779' in fans:
+            return {fan.label: fan.current for fan in fans['nct6779']}
+    except Exception:
+        pass
+    return {}
+
+
+class Cpu0FanSpeed(CustomDataSource):
+    """Fan speed for CPU 0 (nct6779 fan1)."""
+    last_val = [math.nan] * 10
+    value = 0.0
+
+    def as_numeric(self) -> float:
+        if platform.system() == "Linux":
+            fans = _linux_get_fan_speeds()
+            Cpu0FanSpeed.value = fans.get('fan1', 0)
+        Cpu0FanSpeed.last_val.append(Cpu0FanSpeed.value)
+        Cpu0FanSpeed.last_val.pop(0)
+        return Cpu0FanSpeed.value
+
+    def as_string(self) -> str:
+        return f'{Cpu0FanSpeed.value:.0f} RPM'
+
+    def last_values(self) -> List[float]:
+        return Cpu0FanSpeed.last_val
+
+
+class Cpu1FanSpeed(CustomDataSource):
+    """Fan speed for CPU 1 (nct6779 fan2)."""
+    last_val = [math.nan] * 10
+    value = 0.0
+
+    def as_numeric(self) -> float:
+        if platform.system() == "Linux":
+            fans = _linux_get_fan_speeds()
+            Cpu1FanSpeed.value = fans.get('fan2', 0)
+        Cpu1FanSpeed.last_val.append(Cpu1FanSpeed.value)
+        Cpu1FanSpeed.last_val.pop(0)
+        return Cpu1FanSpeed.value
+
+    def as_string(self) -> str:
+        return f'{Cpu1FanSpeed.value:.0f} RPM'
+
+    def last_values(self) -> List[float]:
+        return Cpu1FanSpeed.last_val
+
+
+# ---------------------------------------------------------------------------
+# NVMe Temperature (via psutil sensors_temperatures - Composite reading)
+# ---------------------------------------------------------------------------
+class NvmeTemperature(CustomDataSource):
+    """NVMe drive Composite temperature."""
+    last_val = [math.nan] * 10
+    value = 0.0
+
+    def as_numeric(self) -> float:
+        if platform.system() == "Linux":
+            try:
+                temps = psutil.sensors_temperatures()
+                if 'nvme' in temps:
+                    for t in temps['nvme']:
+                        if t.label == 'Composite':
+                            NvmeTemperature.value = t.current
+                            break
+            except Exception:
+                pass
+        NvmeTemperature.last_val.append(NvmeTemperature.value)
+        NvmeTemperature.last_val.pop(0)
+        return NvmeTemperature.value
+
+    def as_string(self) -> str:
+        return f'{NvmeTemperature.value:.0f}\u00b0C'
+
+    def last_values(self) -> List[float]:
+        return NvmeTemperature.last_val

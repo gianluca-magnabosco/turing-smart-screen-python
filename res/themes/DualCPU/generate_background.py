@@ -18,15 +18,15 @@ PANEL_BORDER = (0, 60, 100)     # Panel border color (dim cyan)
 DIVIDER_COLOR = (0, 50, 85)     # Very subtle divider below titles
 
 # Section separator Y positions (horizontal full-width lines)
-#   Header 0-50 | CPU 50-280 | RAM 280-358 | DISK 358-520 | NET+PING 520-800
-SEPARATORS = [50, 280, 358, 520]
+#   Header 0-50 | CPU 50-294 | RAM 294-372 | DISK 372-534 | NET+PING 534-800
+SEPARATORS = [50, 294, 372, 534]
 
 # Panel boxes (x1, y1, x2, y2)
-CPU1_PANEL = (8, 54, 234, 276)
-CPU2_PANEL = (246, 54, 472, 276)
-RAM_PANEL = (8, 284, 472, 354)
-DISK_PANEL = (8, 362, 472, 516)
-NET_PING_PANEL = (8, 524, 472, 796)
+CPU1_PANEL = (8, 54, 234, 290)
+CPU2_PANEL = (246, 54, 472, 290)
+RAM_PANEL = (8, 298, 472, 368)
+DISK_PANEL = (8, 376, 472, 530)
+NET_PING_PANEL = (8, 538, 472, 796)
 
 
 def lerp_color(c1, c2, t):
@@ -63,24 +63,24 @@ def generate():
 
     # Sub-label dividers (inside panels, below titles)
     for x1, y, x2 in [
-        (22, 81, 220),     # CPU1 title divider
-        (260, 81, 458),    # CPU2 title divider
-        (22, 308, 458),    # RAM title divider
-        (22, 388, 458),    # DISK title divider
-        (22, 548, 458),    # NET title divider
+        (22, 82, 220),     # CPU1 title divider
+        (260, 82, 458),    # CPU2 title divider
+        (22, 322, 458),    # RAM title divider
+        (22, 402, 458),    # DISK title divider
+        (22, 562, 458),    # NET title divider
     ]:
         draw.line([(x1, y), (x2, y)], fill=DIVIDER_COLOR, width=1)
 
     # DISK internal vertical divider (between R and W columns)
-    draw.line([(240, 434), (240, 510)], fill=ACCENT_DIM, width=1)
+    draw.line([(240, 448), (240, 524)], fill=ACCENT_DIM, width=1)
 
     # NET+PING internal dividers
     # Vertical between UP and DL columns
-    draw.line([(240, 554), (240, 658)], fill=ACCENT_DIM, width=1)
+    draw.line([(240, 568), (240, 660)], fill=ACCENT_DIM, width=1)
     # Horizontal between NET and PING
     glow = tuple(max(0, c // 3) for c in ACCENT_DIM)
-    draw.line([(22, 666), (458, 666)], fill=ACCENT_DIM, width=1)
-    draw.line([(22, 667), (458, 667)], fill=glow, width=1)
+    draw.line([(22, 668), (458, 668)], fill=ACCENT_DIM, width=1)
+    draw.line([(22, 669), (458, 669)], fill=glow, width=1)
 
     # Draw horizontal full-width separator lines
     for sy in SEPARATORS:
