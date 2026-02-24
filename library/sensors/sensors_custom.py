@@ -780,7 +780,7 @@ class Cpu0FanSpeed(CustomDataSource):
 
     def as_string(self) -> str:
         if Cpu0FanSpeed.pwm_pct >= 0:
-            return f'{Cpu0FanSpeed.value:.0f}RPM {Cpu0FanSpeed.pwm_pct:.0f}%'
+            return f'{Cpu0FanSpeed.value:.0f}RPM ({Cpu0FanSpeed.pwm_pct:.0f}%)'
         return f'{Cpu0FanSpeed.value:.0f} RPM'
 
     def last_values(self) -> List[float]:
@@ -803,7 +803,7 @@ class Cpu1FanSpeed(CustomDataSource):
 
     def as_string(self) -> str:
         if Cpu1FanSpeed.pwm_pct >= 0:
-            return f'{Cpu1FanSpeed.value:.0f}RPM {Cpu1FanSpeed.pwm_pct:.0f}%'
+            return f'{Cpu1FanSpeed.value:.0f}RPM ({Cpu1FanSpeed.pwm_pct:.0f}%)'
         return f'{Cpu1FanSpeed.value:.0f} RPM'
 
     def last_values(self) -> List[float]:
