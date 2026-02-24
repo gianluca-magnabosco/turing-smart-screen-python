@@ -12,21 +12,21 @@ HEIGHT = 800
 COLOR_TOP = (16, 18, 40)        # Dark navy top
 COLOR_BOTTOM = (10, 12, 28)     # Slightly darker bottom
 ACCENT_DIM = (0, 80, 130)       # Dim cyan accent for separator lines
-ACCENT_BRIGHT = (0, 120, 180)   # Brighter cyan for panel borders
 SECTION_BG = (18, 22, 50)       # Slightly lighter section header areas
 PANEL_BG = (20, 24, 52)         # Subtle panel background
 PANEL_BORDER = (0, 60, 100)     # Panel border color (dim cyan)
+DIVIDER_COLOR = (0, 50, 85)     # Very subtle divider below titles
 
 # Section separator Y positions (horizontal full-width lines)
-#   Header 0-50 | CPU 50-290 | RAM+DISK 290-460 | NET+PING 460-800
-SEPARATORS = [50, 290, 460]
+#   Header 0-50 | CPU 50-280 | RAM 280-358 | DISK 358-520 | NET+PING 520-800
+SEPARATORS = [50, 280, 358, 520]
 
-# Panel boxes (x1, y1, x2, y2) - rounded rect areas
-CPU1_PANEL = (8, 54, 234, 285)
-CPU2_PANEL = (246, 54, 472, 285)
-RAM_PANEL = (8, 294, 234, 455)
-DISK_PANEL = (246, 294, 472, 455)
-NET_PING_PANEL = (8, 464, 472, 796)   # Full-width box for NET + PING
+# Panel boxes (x1, y1, x2, y2)
+CPU1_PANEL = (8, 54, 234, 276)
+CPU2_PANEL = (246, 54, 472, 276)
+RAM_PANEL = (8, 284, 472, 354)
+DISK_PANEL = (8, 362, 472, 516)
+NET_PING_PANEL = (8, 524, 472, 796)
 
 
 def lerp_color(c1, c2, t):
@@ -61,13 +61,26 @@ def generate():
     for panel in [CPU1_PANEL, CPU2_PANEL, RAM_PANEL, DISK_PANEL, NET_PING_PANEL]:
         draw_rounded_rect(draw, panel, radius=8, fill=PANEL_BG, outline=PANEL_BORDER)
 
-    # Draw internal separators inside NET_PING box
-    # Vertical separator between UPLOAD and DOWNLOAD columns
-    draw.line([(240, 496), (240, 632)], fill=ACCENT_DIM, width=1)
-    # Horizontal separator between NET and PING sections
-    draw.line([(22, 638), (458, 638)], fill=ACCENT_DIM, width=1)
+    # Sub-label dividers (inside panels, below titles)
+    for x1, y, x2 in [
+        (22, 81, 220),     # CPU1 title divider
+        (260, 81, 458),    # CPU2 title divider
+        (22, 308, 458),    # RAM title divider
+        (22, 388, 458),    # DISK title divider
+        (22, 548, 458),    # NET title divider
+    ]:
+        draw.line([(x1, y), (x2, y)], fill=DIVIDER_COLOR, width=1)
+
+    # DISK internal vertical divider (between R and W columns)
+    draw.line([(240, 434), (240, 510)], fill=ACCENT_DIM, width=1)
+
+    # NET+PING internal dividers
+    # Vertical between UP and DL columns
+    draw.line([(240, 554), (240, 658)], fill=ACCENT_DIM, width=1)
+    # Horizontal between NET and PING
     glow = tuple(max(0, c // 3) for c in ACCENT_DIM)
-    draw.line([(22, 639), (458, 639)], fill=glow, width=1)
+    draw.line([(22, 666), (458, 666)], fill=ACCENT_DIM, width=1)
+    draw.line([(22, 667), (458, 667)], fill=glow, width=1)
 
     # Draw horizontal full-width separator lines
     for sy in SEPARATORS:
