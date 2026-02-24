@@ -719,10 +719,43 @@ def _linux_get_fan_speeds() -> dict:
     return {}
 
 
+def _linux_find_nct_hwmon_path() -> str:
+    """Find the sysfs hwmon path for the nct6779 chip."""
+    import glob
+    for d in glob.glob('/sys/class/hwmon/hwmon*/'):
+        try:
+            with open(d + 'name') as f:
+                if 'nct' in f.read().strip().lower():
+                    return d.rstrip('/')
+        except Exception:
+            continue
+    return ''
+
+# Cache the hwmon path so we only search once
+_nct_hwmon_path = None
+
+
+def _linux_get_fan_pwm_percent(fan_index: int) -> float:
+    """Get fan PWM duty cycle as a percentage (0-100) by fan index (0-based)."""
+    global _nct_hwmon_path
+    if _nct_hwmon_path is None:
+        _nct_hwmon_path = _linux_find_nct_hwmon_path()
+    if not _nct_hwmon_path:
+        return -1.0
+    try:
+        pwm_file = f'{_nct_hwmon_path}/pwm{fan_index + 1}'
+        with open(pwm_file) as f:
+            pwm_val = int(f.read().strip())
+        return round(pwm_val / 255.0 * 100.0)
+    except Exception:
+        return -1.0
+
+
 class Cpu0FanSpeed(CustomDataSource):
     """Fan speed for CPU 0 (first fan from nct6779)."""
     last_val = [math.nan] * 10
     value = 0.0
+    pwm_pct = -1.0
 
     @staticmethod
     def _get_fan_rpm(fan_index: int) -> float:
@@ -739,11 +772,15 @@ class Cpu0FanSpeed(CustomDataSource):
 
     def as_numeric(self) -> float:
         Cpu0FanSpeed.value = Cpu0FanSpeed._get_fan_rpm(0)
+        if _is_linux:
+            Cpu0FanSpeed.pwm_pct = _linux_get_fan_pwm_percent(0)
         Cpu0FanSpeed.last_val.append(Cpu0FanSpeed.value)
         Cpu0FanSpeed.last_val.pop(0)
         return Cpu0FanSpeed.value
 
     def as_string(self) -> str:
+        if Cpu0FanSpeed.pwm_pct >= 0:
+            return f'{Cpu0FanSpeed.value:.0f}RPM {Cpu0FanSpeed.pwm_pct:.0f}%'
         return f'{Cpu0FanSpeed.value:.0f} RPM'
 
     def last_values(self) -> List[float]:
@@ -754,14 +791,19 @@ class Cpu1FanSpeed(CustomDataSource):
     """Fan speed for CPU 1 (second fan from nct6779)."""
     last_val = [math.nan] * 10
     value = 0.0
+    pwm_pct = -1.0
 
     def as_numeric(self) -> float:
         Cpu1FanSpeed.value = Cpu0FanSpeed._get_fan_rpm(1)
+        if _is_linux:
+            Cpu1FanSpeed.pwm_pct = _linux_get_fan_pwm_percent(1)
         Cpu1FanSpeed.last_val.append(Cpu1FanSpeed.value)
         Cpu1FanSpeed.last_val.pop(0)
         return Cpu1FanSpeed.value
 
     def as_string(self) -> str:
+        if Cpu1FanSpeed.pwm_pct >= 0:
+            return f'{Cpu1FanSpeed.value:.0f}RPM {Cpu1FanSpeed.pwm_pct:.0f}%'
         return f'{Cpu1FanSpeed.value:.0f} RPM'
 
     def last_values(self) -> List[float]:
