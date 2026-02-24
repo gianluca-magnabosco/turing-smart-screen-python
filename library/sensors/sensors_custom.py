@@ -795,3 +795,37 @@ class NvmeTemperature(CustomDataSource):
 
     def last_values(self) -> List[float]:
         return NvmeTemperature.last_val
+
+
+# ---------------------------------------------------------------------------
+# NVMe NAND Flash Temperature (Sensor 2 - hotter flash memory temp)
+# ---------------------------------------------------------------------------
+class NvmeNandTemperature(CustomDataSource):
+    """NVMe NAND flash memory temperature (Sensor 2)."""
+    last_val = [math.nan] * 10
+    value = 0.0
+
+    def as_numeric(self) -> float:
+        if platform.system() == "Linux":
+            try:
+                temps = psutil.sensors_temperatures()
+                if 'nvme' in temps:
+                    for t in temps['nvme']:
+                        if t.label != 'Composite' and t.label:
+                            NvmeNandTemperature.value = t.current
+                            break
+                    else:
+                        # Fallback: use index 1 if labels don't match
+                        if len(temps['nvme']) > 1:
+                            NvmeNandTemperature.value = temps['nvme'][1].current
+            except Exception:
+                pass
+        NvmeNandTemperature.last_val.append(NvmeNandTemperature.value)
+        NvmeNandTemperature.last_val.pop(0)
+        return NvmeNandTemperature.value
+
+    def as_string(self) -> str:
+        return f'{NvmeNandTemperature.value:.0f}\u00b0C'
+
+    def last_values(self) -> List[float]:
+        return NvmeNandTemperature.last_val

@@ -117,7 +117,7 @@ static_text:
   # ── RAM  (full-width panel: x 8-472) ──
   LABEL_RAM:
     TEXT: "RAM"
-    X: 22
+    X: 222
     Y: 304
     FONT: roboto-mono/RobotoMono-Bold.ttf
     FONT_SIZE: 20
@@ -145,7 +145,7 @@ static_text:
   # ── DISK  (full-width panel: x 8-472) ──
   LABEL_DISK:
     TEXT: "DISK"
-    X: 22
+    X: 216
     Y: 382
     FONT: roboto-mono/RobotoMono-Bold.ttf
     FONT_SIZE: 20
@@ -164,6 +164,15 @@ static_text:
   LABEL_DISK_NVME:
     TEXT: "NVMe:"
     X: 260
+    Y: 408
+    FONT: roboto-mono/RobotoMono-Bold.ttf
+    FONT_SIZE: 13
+    FONT_COLOR: 80, 80, 100
+    BACKGROUND_IMAGE: background.png
+
+  LABEL_DISK_NAND:
+    TEXT: "NAND:"
+    X: 358
     Y: 408
     FONT: roboto-mono/RobotoMono-Bold.ttf
     FONT_SIZE: 13
@@ -281,7 +290,7 @@ STATS:
         SHOW: True
         X: 22
         Y: 350
-        WIDTH: 436
+        WIDTH: 380
         HEIGHT: 14
         MIN_VALUE: 0
         MAX_VALUE: 100
@@ -290,10 +299,10 @@ STATS:
         BACKGROUND_COLOR: 30, 30, 60
       PERCENT_TEXT:
         SHOW: True
-        X: 415
-        Y: 304
+        X: 408
+        Y: 350
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 18
+        FONT_SIZE: 16
         FONT_COLOR: 0, 212, 255
         BACKGROUND_IMAGE: background.png
       USED:
@@ -326,7 +335,7 @@ STATS:
         SHOW: True
         X: 22
         Y: 430
-        WIDTH: 436
+        WIDTH: 380
         HEIGHT: 10
         MIN_VALUE: 0
         MAX_VALUE: 100
@@ -335,10 +344,10 @@ STATS:
         BACKGROUND_COLOR: 30, 30, 60
       PERCENT_TEXT:
         SHOW: True
-        X: 415
-        Y: 382
+        X: 408
+        Y: 427
         FONT: roboto-mono/RobotoMono-Bold.ttf
-        FONT_SIZE: 18
+        FONT_SIZE: 16
         FONT_COLOR: 0, 212, 255
         BACKGROUND_IMAGE: background.png
       TEXT:
@@ -688,6 +697,16 @@ STATS:
       TEXT:
         SHOW: True
         X: 320
+        Y: 408
+        FONT: roboto-mono/RobotoMono-Bold.ttf
+        FONT_SIZE: 13
+        FONT_COLOR: 180, 180, 200
+        BACKGROUND_IMAGE: background.png
+
+    NvmeNandTemperature:
+      TEXT:
+        SHOW: True
+        X: 408
         Y: 408
         FONT: roboto-mono/RobotoMono-Bold.ttf
         FONT_SIZE: 13
