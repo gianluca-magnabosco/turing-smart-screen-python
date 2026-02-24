@@ -720,44 +720,54 @@ def _linux_get_fan_speeds() -> dict:
 
 
 class Cpu0FanSpeed(CustomDataSource):
-    """Fan speed for CPU 0 (nct6779 fan1)."""
-    last_val = [math.nan] * 10
-    value = 0.0
+    """Fan speed for CPU 0 (first fan from nct6779)"""
+    last_val = []
 
-    def as_numeric(self) -> float:
-        if platform.system() == "Linux":
-            fans = _linux_get_fan_speeds()
-            Cpu0FanSpeed.value = fans.get('fan1', 0)
-        Cpu0FanSpeed.last_val.append(Cpu0FanSpeed.value)
-        Cpu0FanSpeed.last_val.pop(0)
-        return Cpu0FanSpeed.value
+    @classmethod
+    def _get_fan_rpm(cls, fan_index: int) -> int:
+        """Get fan RPM by index from nct6779 chip"""
+        try:
+            import psutil
+            fans = psutil.sensors_fans()
+            # Find the nct6779 chip
+            for chip_name, entries in fans.items():
+                if 'nct' in chip_name.lower():
+                    if fan_index < len(entries):
+                        return int(entries[fan_index].current)
+            return 0
+        except Exception:
+            return 0
 
-    def as_string(self) -> str:
-        return f'{Cpu0FanSpeed.value:.0f} RPM'
+    @classmethod
+    def as_numeric(cls):
+        val = cls._get_fan_rpm(0)  # fan1 = index 0
+        cls.last_val.append(val)
+        if len(cls.last_val) > 30:
+            cls.last_val.pop(0)
+        return val
 
-    def last_values(self) -> List[float]:
-        return Cpu0FanSpeed.last_val
+    @classmethod
+    def as_string(cls):
+        val = cls.as_numeric()
+        return f"{val} RPM"
 
 
 class Cpu1FanSpeed(CustomDataSource):
-    """Fan speed for CPU 1 (nct6779 fan2)."""
-    last_val = [math.nan] * 10
-    value = 0.0
+    """Fan speed for CPU 1 (second fan from nct6779)"""
+    last_val = []
 
-    def as_numeric(self) -> float:
-        if platform.system() == "Linux":
-            fans = _linux_get_fan_speeds()
-            Cpu1FanSpeed.value = fans.get('fan2', 0)
-        Cpu1FanSpeed.last_val.append(Cpu1FanSpeed.value)
-        Cpu1FanSpeed.last_val.pop(0)
-        return Cpu1FanSpeed.value
+    @classmethod
+    def as_numeric(cls):
+        val = Cpu0FanSpeed._get_fan_rpm(1)  # fan2 = index 1
+        cls.last_val.append(val)
+        if len(cls.last_val) > 30:
+            cls.last_val.pop(0)
+        return val
 
-    def as_string(self) -> str:
-        return f'{Cpu1FanSpeed.value:.0f} RPM'
-
-    def last_values(self) -> List[float]:
-        return Cpu1FanSpeed.last_val
-
+    @classmethod
+    def as_string(cls):
+        val = cls.as_numeric()
+        return f"{val} RPM"
 
 # ---------------------------------------------------------------------------
 # NVMe Temperature (via psutil sensors_temperatures - Composite reading)
